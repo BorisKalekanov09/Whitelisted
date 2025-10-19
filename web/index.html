@@ -1,99 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Sofia Airport Routes</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
-    <style>
-        html, body { height: 100%; margin: 0; padding: 0; }
-        body { font-family: Arial, sans-serif; }
-        #map { height: 90vh; width: 100%; }
-        #controls {
-            height: 10vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f2f2f2;
-            gap: 20px;
-        }
-        select { padding: 5px 10px; font-size: 16px; }
-    </style>
+<meta charset="UTF-8">
+<title>Sofia Airport Routes - Selectable Sectors</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
+<style>
+    html, body { height: 100%; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; }
+    #map { height: 90vh; width: 100%; }
+    #controls {
+        height: 10vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f2f2f2;
+        gap: 20px;
+    }
+    select { padding: 5px 10px; font-size: 16px; }
+</style>
 </head>
 <body>
-    <div id="controls">
-        <label for="routeSelect">Choose a route to display:</label>
-        <select id="routeSelect">
-            <option value="0">Route 1 (Red)</option>
-            <option value="1">Route 2 (Blue)</option>
-            <option value="2">Route 3 (Green)</option>
-            <option value="all">Show All</option>
-        </select>
-    </div>
-    <div id="map"></div>
+<div id="controls">
+    <label for="routeSelect">Select a route:</label>
+    <select id="routeSelect">
+        <option value="0">Route 1 (Red)</option>
+        <option value="1">Route 2 (Blue)</option>
+        <option value="2">Route 3 (Green)</option>
+    </select>
+</div>
+<div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
-    <script>
-        // Initialize map centered on Sofia
-        const map = L.map('map').setView([42.6977, 23.3219], 12);
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+<script>
+const map = L.map('map').setView([42.6977, 23.3219], 12);
 
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+}).addTo(map);
 
-        // Define three routes with one hidden intermediate waypoint each
-        const routesData = [
-            { color: 'red', waypoints: [
-                [42.6977, 23.3219],  // Sofia center
-                [42.7000, 23.3400],  // hidden intermediate to force different road
-                [42.6915, 23.4060]   // Airport
-            ]},
-            { color: 'blue', waypoints: [
-                [42.6977, 23.3219],
-                [42.7100, 23.3600],
-                [42.6915, 23.4060]
-            ]},
-            { color: 'green', waypoints: [
-                [42.6977, 23.3219],
-                [42.6800, 23.3300],
-                [42.6915, 23.4060]
-            ]}
-        ];
+// Routes definition
+const routesData = [
+    { color: 'red', name: 'Route 1', waypoints: [[42.6977,23.3219],[42.7000,23.3400],[42.6915,23.4060]] },
+    { color: 'blue', name: 'Route 2', waypoints: [[42.6977,23.3219],[42.7100,23.3600],[42.6915,23.4060]] },
+    { color: 'green', name: 'Route 3', waypoints: [[42.6977,23.3219],[42.6800,23.3300],[42.6915,23.4060]] }
+];
 
-        let routeControls = [];
+const routeControls = [];
+const sectorPolylines = [];
+const numSectors = 8; // Split each route into 8 sectors
 
-        function createRouteControl(route) {
-            return L.Routing.control({
-                waypoints: route.waypoints.map(p => L.latLng(p[0], p[1])),
-                lineOptions: { styles: [{ color: route.color, weight: 4 }] },
-                routeWhileDragging: false,
-                addWaypoints: false,
-                draggableWaypoints: false,
-                fitSelectedRoutes: true,
-                createMarker: () => null // no visible markers
+function createRouteWithSectors(routeData, routeIndex) {
+    const control = L.Routing.control({
+        waypoints: routeData.waypoints.map(p => L.latLng(p[0], p[1])),
+        createMarker: () => null,
+        addWaypoints: false,
+        draggableWaypoints: false,
+        routeWhileDragging: false,
+        fitSelectedRoutes: true
+    }).addTo(map);
+
+    control.on('routesfound', function(e) {
+        const route = e.routes[0];
+        const coords = route.coordinates;
+        const sectors = [];
+        const sectorLength = Math.floor(coords.length / numSectors);
+
+        for (let i = 0; i < numSectors; i++) {
+            const startIdx = i * sectorLength;
+            const endIdx = (i === numSectors - 1) ? coords.length : (i + 1) * sectorLength;
+            const sectorCoords = coords.slice(startIdx, endIdx);
+            const sector = L.polyline(sectorCoords, { color: routeData.color, weight: 4 }).addTo(map);
+            
+            sector.on('click', () => {
+                alert(`${routeData.name} - Sector ${i+1} clicked!\nCondition: Good`); 
+                sector.setStyle({ color: 'orange', weight: 5 });
+                // Reset other sectors of same route
+                sectors.forEach((s, idx) => {
+                    if(idx !== i) s.setStyle({ color: routeData.color, weight: 4 });
+                });
             });
+
+            sectors.push(sector);
         }
 
-        // Create all 3 routes
-        for (let i = 0; i < routesData.length; i++) {
-            routeControls[i] = createRouteControl(routesData[i]);
-            routeControls[i].addTo(map);
-        }
+        sectorPolylines[routeIndex] = sectors;
 
-        // Dropdown selection logic
-        const select = document.getElementById('routeSelect');
-        select.addEventListener('change', function() {
-            const val = this.value;
-            for (let i = 0; i < routeControls.length; i++) {
-                if (val === 'all' || parseInt(val) === i) {
-                    routeControls[i].addTo(map);
-                } else {
-                    map.removeControl(routeControls[i]);
-                }
-            }
-        });
-    </script>
+        // Remove the original full line
+        if(control._line) map.removeLayer(control._line);
+    });
+
+    return control;
+}
+
+// Initialize all routes but hide them
+for (let i = 0; i < routesData.length; i++) {
+    routeControls[i] = createRouteWithSectors(routesData[i], i);
+    // Initially hide all sectors
+    sectorPolylines[i] = [];
+}
+
+// Dropdown selection logic
+const select = document.getElementById('routeSelect');
+select.addEventListener('change', function() {
+    const val = parseInt(this.value);
+
+    for (let i = 0; i < routesData.length; i++) {
+        if(sectorPolylines[i]) {
+            sectorPolylines[i].forEach(sector => map.removeLayer(sector));
+        }
+    }
+
+    // Show selected route sectors
+    if(sectorPolylines[val]) {
+        sectorPolylines[val].forEach(sector => sector.addTo(map));
+    }
+});
+</script>
 </body>
 </html>
