@@ -2,10 +2,47 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Sensor Map</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <style>
+        /* Make the map fill the page */
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-    
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([48.1486, 17.1077], 13); // Example: Bratislava
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Add a marker (you can later update its position dynamically)
+        var marker = L.marker([48.1486, 17.1077]).addTo(map)
+            .bindPopup('Sensor Location')
+            .openPopup();
+
+        // Example function to update marker position dynamically
+        function updateMarker(lat, lng, popupText = "Sensor Location") {
+            marker.setLatLng([lat, lng]);
+            marker.bindPopup(popupText).openPopup();
+            map.setView([lat, lng], 13); // Optional: move map center to new position
+        }
+
+        // Example usage: simulate new sensor coordinates after 3 seconds
+        setTimeout(() => {
+            updateMarker(48.1490, 17.1085, "Updated Sensor");
+        }, 3000);
+    </script>
 </body>
 </html>
