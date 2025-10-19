@@ -23,7 +23,7 @@
     <div id="controls">
         <label for="roadSelect">Choose a road:</label>
         <select id="roadSelect">
-            <option value="airport">Center → Airport</option>
+            <option value="airport">vidritsa → Airport</option>
             <option value="northern">Northern Sofia Route</option>
             <option value="southern">Southern Sofia Route</option>
         </select>
@@ -34,7 +34,7 @@
     <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
     <script>
         // Initialize map
-        var map = L.map('map').setView([42.6977, 23.3219], 12);
+        var map = L.map('map').setView([42.760247343701906, 22.86364124855089], 12);
 
         // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -44,7 +44,7 @@
         // Define routes with actual points in Sofia (lat, lng)
         const routes = {
             airport: [
-                [42.6977, 23.3219],  // Sofia center
+                [42.760247343701906, 22.86364124855089],  // vidritsa
                 [42.6915, 23.4060]   // Sofia airport approximate
             ],
             northern: [
