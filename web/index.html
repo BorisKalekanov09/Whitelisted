@@ -67,6 +67,7 @@ function createRouteWithSectors(routeData, routeIndex) {
         const sectors = [];
         const sectorLength = Math.floor(coords.length / numSectors);
 
+
         for (let i = 0; i < numSectors; i++) {
             const startIdx = i * sectorLength;
             const endIdx = (i === numSectors - 1) ? coords.length : (i + 1) * sectorLength;
