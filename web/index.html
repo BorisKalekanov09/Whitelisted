@@ -2,47 +2,86 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Sensor Map</title>
-    <!-- Leaflet CSS -->
+    <title>Sofia Roads Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
     <style>
-        /* Make the map fill the page */
-        #map {
-            height: 100vh;
-            width: 100%; 
+        body { margin: 0; font-family: Arial, sans-serif; }
+        #map { height: 90vh; width: 100%; }
+        #controls {
+            height: 10vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f2f2f2;
+            gap: 20px;
+        }
+        select {
+            padding: 5px 10px;
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
+    <div id="controls">
+        <label for="roadSelect">Choose a road:</label>
+        <select id="roadSelect">
+            <option value="airport">Center → Airport</option>
+            <option value="northern">Northern Sofia Route</option>
+            <option value="southern">Southern Sofia Route</option>
+        </select>
+    </div>
     <div id="map"></div>
 
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        // Initialize the map
-        var map = L.map('map').setView([48.1486, 17.1077], 13); // Example: Bratislava
+        // Initialize the map centered on Sofia
+        var map = L.map('map').setView([42.6977, 23.3219], 12);
 
         // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Add a marker (you can later update its position dynamically)
-        var marker = L.marker([48.1486, 17.1077]).addTo(map)
-            .bindPopup('Sensor Location')
-            .openPopup();
+        // Define roads with coordinates (simplified example)
+        const roads = {
+            airport: [
+                [42.6977, 23.3219], // Sofia center
+                [42.6915, 23.4100], // Sofia Airport
+            ],
+            northern: [
+                [42.7100, 23.3000],
+                [42.7300, 23.3500],
+                [42.7500, 23.3300],
+            ],
+            southern: [
+                [42.6800, 23.3000],
+                [42.6600, 23.3300],
+                [42.6500, 23.3100],
+            ]
+        };
 
-        // Example function to update marker position dynamically
-        function updateMarker(lat, lng, popupText = "Sensor Location") {
-            marker.setLatLng([lat, lng]);
-            marker.bindPopup(popupText).openPopup();
-            map.setView([lat, lng], 13); // Optional: move map center to new position
+        // Current polyline
+        let currentLine = null;
+
+        // Function to draw a road
+        function drawRoad(roadName) {
+            // Remove previous line
+            if (currentLine) map.removeLayer(currentLine);
+
+            // Draw new line
+            currentLine = L.polyline(roads[roadName], { color: 'red', weight: 4 }).addTo(map);
+
+            // Fit map to road
+            map.fitBounds(currentLine.getBounds());
         }
 
-        // Example usage: simulate new sensor coordinates after 3 seconds
-        setTimeout(() => {
-            updateMarker(48.1490, 17.1085, "Updated Sensor");
-        }, 3000);
+        // Initial road
+        drawRoad('airport');
+
+        // Event listener for dropdown
+        document.getElementById('roadSelect').addEventListener('change', function() {
+            drawRoad(this.value);
+        });
     </script>
 </body>
 </html>
