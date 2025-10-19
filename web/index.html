@@ -28,6 +28,11 @@
             <option value="1">Route 2 (Blue)</option>
             <option value="2">Route 3 (Green)</option>
             <option value="all">Show All</option>
+        <label for="roadSelect">Choose a road:</label>
+        <select id="roadSelect">
+            <option value="airport">vidritsa → Airport</option>
+            <option value="northern">Northern Sofia Route</option>
+            <option value="southern">Southern Sofia Route</option>
         </select>
     </div>
     <div id="map"></div>
@@ -37,12 +42,31 @@
     <script>
         // Initialize map centered on Sofia
         const map = L.map('map').setView([42.6977, 23.3219], 12);
+        // Initialize map
+        var map = L.map('map').setView([42.760578653614274, 22.863544551378705], 12);
 
         // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
+        // Define routes with actual points in Sofia (lat, lng)
+        const routes = {
+            airport: [
+                [42.760578653614274, 22.863544551378705],  // Sofia center
+                [42.6915, 23.4060]   // Sofia airport approximate
+            ],
+            northern: [
+                [42.7100, 23.3000],
+                [42.7300, 23.3500],
+                [42.7500, 23.3300]
+            ],
+            southern: [
+                [42.6800, 23.3000],
+                [42.6600, 23.3300],
+                [42.6500, 23.3100]
+            ]
+        };
         // Define three routes with one hidden intermediate waypoint each
         const routesData = [
             { color: 'red', waypoints: [
