@@ -75,8 +75,10 @@ function createRouteWithSectors(routeData, routeIndex) {
             const sector = L.polyline(sectorCoords, { color: routeData.color, weight: 4 }).addTo(map);
             
             sector.on('click', () => {
+                const popupContent = `${routeData.name} - Sector ${i+1} clicked!\nCondition: Good`;
                 alert(`${routeData.name} - Sector ${i+1} clicked!\nCondition: Good`); 
                 sector.setStyle({ color: 'orange', weight: 5 });
+                sector.bindPopup(popupContent).openPopup();
                 // Reset other sectors of same route
                 sectors.forEach((s, idx) => {
                     if(idx !== i) s.setStyle({ color: routeData.color, weight: 4 });
