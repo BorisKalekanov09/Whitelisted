@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Sofia Roads Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
     <style>
         body { margin: 0; font-family: Arial, sans-serif; }
         #map { height: 90vh; width: 100%; }
@@ -15,10 +16,7 @@
             background: #f2f2f2;
             gap: 20px;
         }
-        select {
-            padding: 5px 10px;
-            font-size: 16px;
-        }
+        select { padding: 5px 10px; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -33,8 +31,9 @@
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
     <script>
-        // Initialize the map centered on Sofia
+        // Initialize map
         var map = L.map('map').setView([42.6977, 23.3219], 12);
 
         // Add OpenStreetMap tiles
@@ -42,46 +41,51 @@
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Define roads with coordinates (simplified example)
-        const roads = {
+        // Define routes with actual points in Sofia (lat, lng)
+        const routes = {
             airport: [
-                [42.6977, 23.3219], // Sofia center
-                [42.6915, 23.4100], // Sofia Airport
+                [42.6977, 23.3219],  // Sofia center
+                [42.6915, 23.4060]   // Sofia airport approximate
             ],
             northern: [
                 [42.7100, 23.3000],
                 [42.7300, 23.3500],
-                [42.7500, 23.3300],
+                [42.7500, 23.3300]
             ],
             southern: [
                 [42.6800, 23.3000],
                 [42.6600, 23.3300],
-                [42.6500, 23.3100],
+                [42.6500, 23.3100]
             ]
         };
 
-        // Current polyline
-        let currentLine = null;
+        let currentControl = null;
 
-        // Function to draw a road
-        function drawRoad(roadName) {
-            // Remove previous line
-            if (currentLine) map.removeLayer(currentLine);
+        function drawRoute(routeName) {
+            if (currentControl) {
+                map.removeControl(currentControl);
+            }
 
-            // Draw new line
-            currentLine = L.polyline(roads[roadName], { color: 'red', weight: 4 }).addTo(map);
-
-            // Fit map to road
-            map.fitBounds(currentLine.getBounds());
+            currentControl = L.Routing.control({
+                waypoints: routes[routeName].map(coord => L.latLng(coord[0], coord[1])),
+                lineOptions: {
+                    styles: [{ color: 'red', weight: 4 }]
+                },
+                routeWhileDragging: false,
+                draggableWaypoints: false,
+                addWaypoints: false,
+                fitSelectedRoutes: true
+            }).addTo(map);
         }
 
-        // Initial road
-        drawRoad('airport');
+        // Initial route
+        drawRoute('airport');
 
-        // Event listener for dropdown
+        // Dropdown change
         document.getElementById('roadSelect').addEventListener('change', function() {
-            drawRoad(this.value);
+            drawRoute(this.value);
         });
     </script>
 </body>
 </html>
+
