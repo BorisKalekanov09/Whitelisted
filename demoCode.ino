@@ -2,25 +2,24 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
-#include "BluetoothSerial.h"
 
-// ====== BLUETOOTH ======
-#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-#error Bluetooth not enabled! Please enable in menuconfig.
-#endif
+#include <WiFi.h>
+#include <WebSocketsClient.h>
 
-BluetoothSerial SerialBT;
-
+const char* ssid = "Mino";     // Replace with your WiFi name
+const char* password = "AGoodPass"; // Replace with your WiFi password
+const char* serverAddress = "10.198.171.173"; // Example: "192.168.1.100"
+const int serverPort = 8080;
+WebSocketsClient webSocket;
 // ====== L9110S MOTOR PINS ======
-#define AIN1 21
-#define AIN2 22
-#define BIN1 25
-#define BIN2 33
+#define IN1 26
+#define IN2 27
+#define IN3 25
+#define IN4 33
 
-// ====== IR SENSORS ======
-#define LEFT_SENSOR   34
-#define CENTER_SENSOR 35
-#define RIGHT_SENSOR  14
+// ====== IR SENSORS (2 sensors) ======
+#define LEFT_SENSOR 35
+#define RIGHT_SENSOR 34
 
 // ====== OTHER SENSORS ======
 #define DHTPIN 5
@@ -30,14 +29,62 @@ BluetoothSerial SerialBT;
 Adafruit_MPU6050 mpu;
 DHT dht(DHTPIN, DHTTYPE);
 
-// ====== PID VARIABLES ======
-float Kp = 15, Ki = 0, Kd = 10;
-float P = 0, I = 0, D = 0, previousError = 0;
-float multiP = 1, multiI = 1, multiD = 1;
-int baseSpeed = 180;
-bool onoff = false;
+// ====== MOTOR CONTROL ======
+int maxSpeed = 190;      // maximum PWM speed
+int turnSpeed = 120;      // turn PWM speed
+int accelStep = 10;      // PWM ramp step
 
-// ====== ROAD QUALITY ======
+int currentLeftSpeed = 0;
+int currentRightSpeed = 0;
+
+void motorLeft(int speed) {
+  speed = constrain(speed, -255, 255);
+  if (speed > 0) {
+    analogWrite(IN1, speed);
+    analogWrite(IN2, 0);
+  } else if (speed < 0) {
+    analogWrite(IN2, -speed);
+    analogWrite(IN1, 0);
+  } else {
+    analogWrite(IN1, 0);
+    analogWrite(IN2, 0);
+  }
+}
+
+void motorRight(int speed) {
+  speed = constrain(speed, -255, 255);
+  if (speed > 0) {
+    analogWrite(IN3, speed);
+    analogWrite(IN4, 0);
+  } else if (speed < 0) {
+    analogWrite(IN4, -speed);
+    analogWrite(IN3, 0);
+  } else {
+    analogWrite(IN3, 0);
+    analogWrite(IN4, 0);
+  }
+}
+
+void setMotorSpeed(int targetLeft, int targetRight) {
+  // Gradually ramp Left
+    motorLeft(targetLeft);
+    motorRight(targetRight);
+
+}
+
+// ====== LINE FOLLOWING ======
+void lineFollow2Sensor() {
+  int L = digitalRead(LEFT_SENSOR);
+  int R = digitalRead(RIGHT_SENSOR);
+
+  // LOW = white line, HIGH = black background
+  if (L == 0 && R == 0) setMotorSpeed(maxSpeed, maxSpeed);           // move forward
+  else if (L == 0 && R == 1) setMotorSpeed(maxSpeed-20, -turnSpeed); // turn left
+  else if (R == 0 && L == 1) setMotorSpeed(-turnSpeed, maxSpeed-20); // turn right
+  else setMotorSpeed(0, 0);                                         // stop
+}
+
+// ====== INTERRUPT & ROAD QUALITY ======
 volatile int vibCount = 0;
 const int SAMPLE_COUNT = 10;
 float azValues[SAMPLE_COUNT];
@@ -45,117 +92,31 @@ int indexA = 0;
 unsigned long lastRoadCheck = 0;
 const unsigned long ROAD_INTERVAL = 1000;
 
-// ====== MOTOR CONTROL FOR L9110S ======
-void motorLeft(int speed) {
-  speed = constrain(speed, -255, 255);
-  if (speed > 0) {
-    analogWrite(AIN1, speed);
-    digitalWrite(AIN2, LOW);
-  } else if (speed < 0) {
-    digitalWrite(AIN1, LOW);
-    analogWrite(AIN2, -speed);
-  } else {
-    digitalWrite(AIN1, LOW);
-    digitalWrite(AIN2, LOW);
-  }
-}
-
-void motorRight(int speed) {
-  speed = constrain(speed, -255, 255);
-  if (speed > 0) {
-    analogWrite(BIN1, speed);
-    digitalWrite(BIN2, LOW);
-  } else if (speed < 0) {
-    digitalWrite(BIN1, LOW);
-    analogWrite(BIN2, -speed);
-  } else {
-    digitalWrite(BIN1, LOW);
-    digitalWrite(BIN2, LOW);
-  }
-}
-
-void stopMotors() {
-  digitalWrite(AIN1, LOW); digitalWrite(AIN2, LOW);
-  digitalWrite(BIN1, LOW); digitalWrite(BIN2, LOW);
-}
-
-// ====== INTERRUPT & STATS ======
-void IRAM_ATTR vibISR() {
-  vibCount++;
-}
+void IRAM_ATTR vibISR() { vibCount++; }
 
 float computeStdDev(float *arr, int n) {
   float sum = 0, mean, stddev = 0;
-  for (int i = 0; i < n; i++) sum += arr[i];
+  for(int i=0;i<n;i++) sum += arr[i];
   mean = sum / n;
-  for (int i = 0; i < n; i++) stddev += pow(arr[i] - mean, 2);
-  return sqrt(stddev / n);
+  for(int i=0;i<n;i++) stddev += pow(arr[i]-mean,2);
+  return sqrt(stddev/n);
 }
 
-// ====== PID LINE FOLLOWING ======
-void lineFollowPID() {
-  int leftVal = digitalRead(LEFT_SENSOR);
-  int centerVal = digitalRead(CENTER_SENSOR);
-  int rightVal = digitalRead(RIGHT_SENSOR);
-
-  int error = 0;
-  if (leftVal == HIGH && centerVal == LOW && rightVal == LOW) error = -2;
-  else if (leftVal == HIGH && centerVal == HIGH && rightVal == LOW) error = -1;
-  else if (leftVal == LOW && centerVal == HIGH && rightVal == LOW) error = 0;
-  else if (leftVal == LOW && centerVal == HIGH && rightVal == HIGH) error = 1;
-  else if (leftVal == LOW && centerVal == LOW && rightVal == HIGH) error = 2;
-  else if (leftVal == LOW && centerVal == LOW && rightVal == LOW) error = previousError;
-
-  P = error;
-  I += error;
-  D = error - previousError;
-
-  float Pvalue = (Kp / pow(10, multiP)) * P;
-  float Ivalue = (Ki / pow(10, multiI)) * I;
-  float Dvalue = (Kd / pow(10, multiD)) * D;
-
-  float PIDvalue = Pvalue + Ivalue + Dvalue;
-  previousError = error;
-
-  int leftSpeed = baseSpeed - PIDvalue;
-  int rightSpeed = baseSpeed + PIDvalue;
-
-  motorLeft(leftSpeed);
-  motorRight(rightSpeed);
+void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
+  if (type == WStype_CONNECTED) Serial.println("Connected to WebSocket");
+  else if (type == WStype_DISCONNECTED) Serial.println("Disconnected");
 }
 
-// ====== BLUETOOTH COMMAND HANDLER ======
-int val, cnt = 0, v[3];
-void valuesread() {
-  val = SerialBT.read();
-  cnt++;
-  v[cnt] = val;
-  if (cnt == 2) cnt = 0;
-}
-
-void processing() {
-  int a = v[1];
-  if (a == 1) Kp = v[2];
-  if (a == 2) multiP = v[2];
-  if (a == 3) Ki = v[2];
-  if (a == 4) multiI = v[2];
-  if (a == 5) Kd = v[2];
-  if (a == 6) multiD = v[2];
-  if (a == 7) onoff = v[2];
-}
 
 // ====== SETUP ======
 void setup() {
   Serial.begin(115200);
-  SerialBT.begin("ESP32-L9110S-LineBot");
-  Serial.println("Bluetooth Started — Ready to pair!");
+
+  pinMode(IN1, OUTPUT); pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT); pinMode(IN4, OUTPUT);
 
   pinMode(LEFT_SENSOR, INPUT);
-  pinMode(CENTER_SENSOR, INPUT);
   pinMode(RIGHT_SENSOR, INPUT);
-
-  pinMode(AIN1, OUTPUT); pinMode(AIN2, OUTPUT);
-  pinMode(BIN1, OUTPUT); pinMode(BIN2, OUTPUT);
 
   pinMode(VIB_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(VIB_PIN), vibISR, RISING);
@@ -163,38 +124,44 @@ void setup() {
   Wire.begin();
   dht.begin();
 
-  if (!mpu.begin()) {
+  if(!mpu.begin()) {
     Serial.println("MPU6050 not found!");
-    while (1);
+    while(1);
   }
   mpu.setAccelerometerRange(MPU6050_RANGE_4_G);
   mpu.setFilterBandwidth(MPU6050_BAND_10_HZ);
 
-  Serial.println("PID Line Follower (L9110S) + Road Monitor Ready!");
+  Serial.println("ESP32 2-Sensor White Line Follower Ready!");
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+        delay(1000);
+        Serial.print(".");
+    }
+ Serial.println("\nWiFi connected");
+    Serial.print("ESP32 IP: ");
+    Serial.println(WiFi.localIP());
+    Serial.println("Connecting to WebSocket server...");
+    webSocket.begin(serverAddress, serverPort, "/");  // Connect to the WebSocket server
+    webSocket.onEvent(webSocketEvent);  // Attach event handler
 }
 
 // ====== MAIN LOOP ======
 void loop() {
-  if (SerialBT.available()) {
-    while (SerialBT.available() == 0);
-    valuesread();
-    processing();
-  }
+    webSocket.loop();  // <--- Add this at the very start
 
-  if (onoff) {
-    lineFollowPID();
-  } else {
-    stopMotors();
-  }
+  // --- LINE FOLLOWING ---
+  lineFollow2Sensor();
 
-  // --- Road Quality Monitoring ---
+  // --- ROAD QUALITY MONITOR ---
   sensors_event_t a, g, tempEvent;
   mpu.getEvent(&a, &g, &tempEvent);
   azValues[indexA] = a.acceleration.z;
   indexA = (indexA + 1) % SAMPLE_COUNT;
   float stdAz = computeStdDev(azValues, SAMPLE_COUNT);
 
-  if (millis() - lastRoadCheck >= ROAD_INTERVAL) {
+  if(millis() - lastRoadCheck >= ROAD_INTERVAL) {
     float temp = dht.readTemperature();
     float hum = dht.readHumidity();
 
@@ -202,9 +169,9 @@ void loop() {
     float roughness = 0.8 * stdAz + 0.4 * vibNorm;
 
     float traction = 1.0;
-    if (temp < 5) traction -= 0.4;
-    else if (temp > 30) traction -= 0.3;
-    if (hum > 60) traction -= 0.3;
+    if(temp < 5) traction -= 0.4;
+    else if(temp > 30) traction -= 0.3;
+    if(hum > 60) traction -= 0.3;
     traction = max(traction, 0.4f);
 
     float normR = constrain(roughness / 1.5, 0.0, 1.0);
@@ -212,7 +179,7 @@ void loop() {
 
     String roadState = (roadQuality > 0.85) ? "GOOD" :
                        (roadQuality > 0.45) ? "MEDIUM" : "BAD";
-
+/*
     Serial.println("===== ROAD QUALITY REPORT =====");
     Serial.print("Temp: "); Serial.print(temp); Serial.print(" °C  ");
     Serial.print("Humidity: "); Serial.print(hum); Serial.println(" %");
@@ -220,8 +187,12 @@ void loop() {
     Serial.print("Vibration count/sec: "); Serial.println(vibCount);
     Serial.print("Road Quality Score: "); Serial.println(roadQuality, 2);
     Serial.print("Condition: "); Serial.println(roadState);
-    Serial.println();
+    Serial.println();*/
 
+String message = "{\"roadQuality\":" + String(roadQuality, 2) +
+                     ",\"condition\":\"" + roadState + "\"}";
+    webSocket.sendTXT(message);
+  Serial.println(message);
     vibCount = 0;
     lastRoadCheck = millis();
   }
