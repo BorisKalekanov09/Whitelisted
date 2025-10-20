@@ -87,14 +87,29 @@ function createRouteWithSectors(routeData, routeIndex) {
             const endIdx = (i === numSectors - 1) ? coords.length : (i + 1) * sectorLength;
             const sectorCoords = coords.slice(startIdx, endIdx);
             const sector = L.polyline(sectorCoords, { color: routeData.color, weight: 4 }).addTo(map);
-            const routeper1 = [100,80,90,50,40,30,50,80];
-            const popupContent2 = `${routeData.name} have (condition) road`;
-            sector.bindTooltip(popupContent2);
+            const routeper1 = [100,80,90,70,80,90,80,80];
+            const routeavg1 = 83.75;
+            const routeper2 = [100,80,90,70,80,70,80,80];
+            const routeavg2 = 81.25;
+            const routeper3 = [80,70,60,50,70,60,80,80];
+            const routeavg3 = 68.75;
+            if(routeData.name=="Route 1"){
+                const popupContent2 = `${routeData.name} is good (${routeavg1}%)`;
+                sector.bindTooltip(popupContent2);
+            }
+            if(routeData.name=="Route 2"){
+                const popupContent2 = `${routeData.name} is good (${routeavg2}%)`;
+                sector.bindTooltip(popupContent2);
+            }
+            if(routeData.name=="Route 3"){
+                const popupContent2 = `${routeData.name} is average (${routeavg3}%)`;
+                sector.bindTooltip(popupContent2);
+            }
             
             sector.on('click', () => {
             if(routeData.name== 'Route 1'){
                 if(90<=routeper1[i] && routeper1[i]<=100){
-                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: best`; 
+                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: best (${routeper1[i]}%)`; 
                     sector.setStyle({ color: 'purple', weight: 5 });
                     sector.bindPopup(popupContent1).openPopup();
                     // Reset other sectors of same route
@@ -103,7 +118,7 @@ function createRouteWithSectors(routeData, routeIndex) {
                     });
                 }
                 if(70<=routeper1[i] && routeper1[i]<=89){
-                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: Good`; 
+                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: Good  (${routeper1[i]}%)`; 
                     sector.setStyle({ color: 'green', weight: 5 });
                     sector.bindPopup(popupContent1).openPopup();
                     // Reset other sectors of same route
@@ -112,7 +127,7 @@ function createRouteWithSectors(routeData, routeIndex) {
                     });
                 }
                 if(50<=routeper1[i] && routeper1[i]<=69){
-                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: average`; 
+                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: average  (${routeper1[i]}%)`; 
                     sector.setStyle({ color: 'yellow', weight: 5 });
                     sector.bindPopup(popupContent1).openPopup();
                     // Reset other sectors of same route
@@ -121,7 +136,7 @@ function createRouteWithSectors(routeData, routeIndex) {
                     });
                 }
                 if(30<=routeper1[i] && routeper1[i]<=49){
-                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: below average`; 
+                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: below average  (${routeper1[i]}%)`; 
                     sector.setStyle({ color: 'orange', weight: 5 });
                     sector.bindPopup(popupContent1).openPopup();
                     // Reset other sectors of same route
@@ -130,6 +145,100 @@ function createRouteWithSectors(routeData, routeIndex) {
                     });
                 }
                 if(0<=routeper1[i] && routeper1[i]<=29){
+                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: bad  (${routeper1[i]}%)`; 
+                    sector.setStyle({ color: 'red', weight: 5 });
+                    sector.bindPopup(popupContent1).openPopup();
+                    // Reset other sectors of same route
+                    sectors.forEach((s, idx) => {
+                        if(idx !== i) s.setStyle({ color: routeData.color, weight: 4 });
+                    });
+                }
+            }
+            if(routeData.name== 'Route 2'){
+                if(90<=routeper2[i] && routeper2[i]<=100){
+                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: best`; 
+                    sector.setStyle({ color: 'purple', weight: 5 });
+                    sector.bindPopup(popupContent1).openPopup();
+                    // Reset other sectors of same route
+                    sectors.forEach((s, idx) => {
+                        if(idx !== i) s.setStyle({ color: routeData.color, weight: 4 });
+                    });
+                }
+                if(70<=routeper2[i] && routeper2[i]<=89){
+                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: Good`; 
+                    sector.setStyle({ color: 'green', weight: 5 });
+                    sector.bindPopup(popupContent1).openPopup();
+                    // Reset other sectors of same route
+                    sectors.forEach((s, idx) => {
+                        if(idx !== i) s.setStyle({ color: routeData.color, weight: 4 });
+                    });
+                }
+                if(50<=routeper2[i] && routeper2[i]<=69){
+                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: average`; 
+                    sector.setStyle({ color: 'yellow', weight: 5 });
+                    sector.bindPopup(popupContent1).openPopup();
+                    // Reset other sectors of same route
+                    sectors.forEach((s, idx) => {
+                        if(idx !== i) s.setStyle({ color: routeData.color, weight: 4 });
+                    });
+                }
+                if(30<=routeper2[i] && routeper2[i]<=49){
+                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: below average`; 
+                    sector.setStyle({ color: 'orange', weight: 5 });
+                    sector.bindPopup(popupContent1).openPopup();
+                    // Reset other sectors of same route
+                    sectors.forEach((s, idx) => {
+                        if(idx !== i) s.setStyle({ color: routeData.color, weight: 4 });
+                    });
+                }
+                if(0<=routeper2[i] && routeper2[i]<=29){
+                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: bad`; 
+                    sector.setStyle({ color: 'red', weight: 5 });
+                    sector.bindPopup(popupContent1).openPopup();
+                    // Reset other sectors of same route
+                    sectors.forEach((s, idx) => {
+                        if(idx !== i) s.setStyle({ color: routeData.color, weight: 4 });
+                    });
+                }
+            }
+            if(routeData.name== 'Route 3'){
+                if(90<=routeper3[i] && routeper3[i]<=100){
+                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: best`; 
+                    sector.setStyle({ color: 'purple', weight: 5 });
+                    sector.bindPopup(popupContent1).openPopup();
+                    // Reset other sectors of same route
+                    sectors.forEach((s, idx) => {
+                        if(idx !== i) s.setStyle({ color: routeData.color, weight: 4 });
+                    });
+                }
+                if(70<=routeper3[i] && routeper3[i]<=89){
+                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: Good`; 
+                    sector.setStyle({ color: 'green', weight: 5 });
+                    sector.bindPopup(popupContent1).openPopup();
+                    // Reset other sectors of same route
+                    sectors.forEach((s, idx) => {
+                        if(idx !== i) s.setStyle({ color: routeData.color, weight: 4 });
+                    });
+                }
+                if(50<=routeper3[i] && routeper3[i]<=69){
+                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: average`; 
+                    sector.setStyle({ color: 'yellow', weight: 5 });
+                    sector.bindPopup(popupContent1).openPopup();
+                    // Reset other sectors of same route
+                    sectors.forEach((s, idx) => {
+                        if(idx !== i) s.setStyle({ color: routeData.color, weight: 4 });
+                    });
+                }
+                if(30<=routeper3[i] && routeper3[i]<=49){
+                    const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: below average`; 
+                    sector.setStyle({ color: 'orange', weight: 5 });
+                    sector.bindPopup(popupContent1).openPopup();
+                    // Reset other sectors of same route
+                    sectors.forEach((s, idx) => {
+                        if(idx !== i) s.setStyle({ color: routeData.color, weight: 4 });
+                    });
+                }
+                if(0<=routeper3[i] && routeper3[i]<=29){
                     const popupContent1 = `${routeData.name} - Sector ${i+1} clicked!\nCondition: bad`; 
                     sector.setStyle({ color: 'red', weight: 5 });
                     sector.bindPopup(popupContent1).openPopup();
