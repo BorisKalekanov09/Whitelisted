@@ -5,20 +5,31 @@
 <title>Sofia Airport Routes - Selectable Sectors</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
-<link rel="stylesheet" href="style.css"/>
 <style>
     html, body { height: 100%; margin: 0; padding: 0; }
     body { font-family: Arial, sans-serif; }
-    #map { height: 90vh; width: 100%; }
+    #map { height: 90vh; width: 100%;}
     #controls {
         height: 10vh;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #f2f2f2;
+        background-color: white;
         gap: 20px;
     }
-    select { padding: 5px 10px; font-size: 16px; }
+    select {
+        padding: 5px 10px;
+        font-size: 16px;
+        border: 2px solid black;
+        border-radius: 15px;
+    }
+    #feedback{
+        text-decoration: none;
+        color: black;
+        display: flex;
+        align-items: right;
+    }
+
 </style>
 </head>
 <body>
@@ -29,14 +40,7 @@
         <option value="1">Route 2 (Blue)</option>
         <option value="2">Route 3 (Green)</option>
     </select>
-    <a id="feedback" href="https://docs.google.com/forms/d/e/1FAIpQLSczsRGaiNdaBRxRVALlKULd1AukiYrFrxaQRIc5c0WU1uJlNQ/viewform?usp=header
-    
-    
-    
-    
-    
-    
-    ">Feedback</a>
+    <a id="feedback" href="https://docs.google.com/forms/d/e/1FAIpQLSczsRGaiNdaBRxRVALlKULd1AukiYrFrxaQRIc5c0WU1uJlNQ/viewform?usp=header">Feedback</a>
 </div>
 <div id="map"></div>
 
