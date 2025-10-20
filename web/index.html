@@ -73,10 +73,11 @@ function createRouteWithSectors(routeData, routeIndex) {
             const endIdx = (i === numSectors - 1) ? coords.length : (i + 1) * sectorLength;
             const sectorCoords = coords.slice(startIdx, endIdx);
             const sector = L.polyline(sectorCoords, { color: routeData.color, weight: 4 }).addTo(map);
+            const routeper = [];
             
             sector.on('click', () => {
-                const popupContent = `${routeData.name} - Sector ${i+1} clicked!\nCondition: Good`;
-                alert(`${routeData.name} - Sector ${i+1} clicked!\nCondition: Good`); 
+                
+                const popupContent = `${routeData.name} - Sector ${i+1} clicked!\nCondition: Good`; 
                 sector.setStyle({ color: 'orange', weight: 5 });
                 sector.bindPopup(popupContent).openPopup();
                 // Reset other sectors of same route
