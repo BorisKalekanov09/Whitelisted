@@ -73,7 +73,9 @@ function createRouteWithSectors(routeData, routeIndex) {
         draggableWaypoints: false,
         routeWhileDragging: false,
         fitSelectedRoutes: true
-    }).addTo(map);
+        
+    }
+).addTo(map);
 
     control.on('routesfound', function(e) {
         const route = e.routes[0];
